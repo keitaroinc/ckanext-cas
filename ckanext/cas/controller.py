@@ -6,6 +6,7 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
+import urllib
 import logging
 import requests as rq
 import ckan.plugins.toolkit as t
@@ -16,6 +17,7 @@ import ckan.logic as l
 import ckan.lib.helpers as h
 
 from ckan.controllers.user import UserController, set_repoze_user
+from ckanext.cas.db import insert_entry, delete_entry
 from lxml import etree, objectify
 from uuid import uuid4
 
@@ -27,12 +29,26 @@ render = base.render
 abort = base.abort
 redirect = base.redirect
 
+CAS_NAMESPACE = 'urn:oasis:names:tc:SAML:2.0:protocol'
+XML_NAMESPACES = {'samlp': CAS_NAMESPACE}
+
 
 class CASController(UserController):
     def cas_logout(self):
-        log.debug('CAS LOGOUT CALLBACK')
+        log.debug('CAS LOGOUT')
         log.debug(t.request)
-        # TODO: Check if logout was successful in CAS server
+        log.debug(t.request.body)
+
+        data = t.request.POST
+        message = data.get('logoutRequest', None)
+
+        if not message:
+            return False
+
+        parsed = etree.fromstring(urllib.unquote(message))
+        session_index = parsed.find('samlp:SessionIndex', XML_NAMESPACES)
+        if session_index is not None:
+            delete_entry(session_index.text)
         url = h.url_for(controller='user', action='logged_out_page',
                         __ckan_no_root=True)
         h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
@@ -92,10 +108,12 @@ class CASController(UserController):
                     print sysadmin
 
                 set_repoze_user(user_obj['name'])
+                insert_entry(ticket, user.name)
                 redirect(t.h.url_for(controller='user', action='dashboard', id=user_obj['name']))
 
             else:
                 set_repoze_user(user.name)
+                insert_entry(ticket, user.name)
                 redirect(t.h.url_for(controller='user', action='dashboard', id=user.name))
 
         elif t.request.method.lower() == 'post':
