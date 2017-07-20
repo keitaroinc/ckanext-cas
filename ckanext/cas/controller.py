@@ -13,6 +13,7 @@ import ckan.lib.base as base
 import ckan.plugins as p
 import ckan.model as m
 import ckan.logic as l
+import ckan.lib.helpers as h
 
 from ckan.controllers.user import UserController, set_repoze_user
 from lxml import etree, objectify
@@ -31,6 +32,10 @@ class CASController(UserController):
     def cas_logout(self):
         log.debug('CAS LOGOUT CALLBACK')
         log.debug(t.request)
+        # TODO: Check if logout was successful in CAS server
+        url = h.url_for(controller='user', action='logged_out_page',
+                        __ckan_no_root=True)
+        h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
 
     def cas_callback(self, **kwargs):
         log.debug('CAS CALLBACK')
@@ -40,7 +45,7 @@ class CASController(UserController):
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.get(cas_plugin.SERVICE_VALIDATION_URL,
                        params={cas_plugin.TICKET_KEY: ticket,
-                               cas_plugin.SERVICE_KEY: 'http://localhost:5000/cas/callback'})
+                               cas_plugin.SERVICE_KEY: config.get('ckan.site_url') + '/cas/callback'})
 
             root = objectify.fromstring(q.content)
             try:

@@ -53,7 +53,7 @@ class CASClientPlugin(p.SingletonPlugin):
             raise RuntimeError, '"email" attribute mapping is required for plugin: {0}'.format(self.name)
 
         self.CAS_LOGIN_URL = config.get('ckanext.cas.login_url', 'http://localhost:8000/login')
-        self.CAS_LOGOUT_URL = config.get('ckanext.cas.logout_url', 'http://localhost:8000/login')
+        self.CAS_LOGOUT_URL = config.get('ckanext.cas.logout_url', 'http://localhost:8000/logout')
         self.CAS_COOKIE_NAME = config.get('ckanext.cas.cookie_name', 'sessionid')
         self.TICKET_KEY = config.get('ckanext.cas.ticket_key', 'ticket')
         self.SERVICE_KEY = config.get('ckanext.cas.service_key', 'service')
@@ -80,14 +80,16 @@ class CASClientPlugin(p.SingletonPlugin):
 
     def login(self):
         log.debug('PLUGIN LOGIN')
-        LOGIN_URL = 'http://localhost:8000/login?service=http://localhost:5000/cas/callback'
-        redirect(LOGIN_URL)
+        # Move to helper
+        cas_login_url = self.CAS_LOGIN_URL + '?service=' + config.get('ckan.site_url') + '/cas/callback'
+        redirect(cas_login_url)
 
     def logout(self):
-        c = t.c
         log.debug('PLUGIN LOGOUT')
-        q = rq.get('http://localhost:8000/logout', cookies=t.request.cookies)
-        log.debug(q.status_code)
+        cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + config.get('ckan.site_url') + '/cas/logout'
+        # q = rq.get(self.CAS_LOGOUT_URL, cookies=t.request.cookies)
+        # log.debug(q.status_code)
+        redirect(cas_logout_url)
 
     def abort(self, status_code, detail, headers, comment):
         c = t.c
