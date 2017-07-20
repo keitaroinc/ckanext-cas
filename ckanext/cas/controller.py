@@ -17,7 +17,7 @@ import ckan.logic as l
 import ckan.lib.helpers as h
 
 from ckan.controllers.user import UserController, set_repoze_user
-from ckanext.cas.db import insert_entry, delete_entry
+from ckanext.cas.db import insert_entry, delete_entry, delete_user_entry
 from lxml import etree, objectify
 from uuid import uuid4
 
@@ -49,6 +49,7 @@ class CASController(UserController):
         session_index = parsed.find('samlp:SessionIndex', XML_NAMESPACES)
         if session_index is not None:
             delete_entry(session_index.text)
+
         url = h.url_for(controller='user', action='logged_out_page',
                         __ckan_no_root=True)
         h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
@@ -108,11 +109,13 @@ class CASController(UserController):
                     print sysadmin
 
                 set_repoze_user(user_obj['name'])
+                delete_user_entry(user_obj['name'])
                 insert_entry(ticket, user.name)
                 redirect(t.h.url_for(controller='user', action='dashboard', id=user_obj['name']))
 
             else:
                 set_repoze_user(user.name)
+                delete_user_entry(user.name)
                 insert_entry(ticket, user.name)
                 redirect(t.h.url_for(controller='user', action='dashboard', id=user.name))
 

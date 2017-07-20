@@ -30,7 +30,7 @@ class CasUser(domain_object.DomainObject):
 
 cas_user_table = Table('ckanext_cas_login', metadata,
                        Column('ticket_id', types.UnicodeText, primary_key=True, nullable=False),
-                       Column('user', types.UnicodeText, default=u'', nullable=False),
+                       Column('user', types.UnicodeText, default=u'', nullable=False, unique=True),
                        Column('timestamp', types.DateTime, default=datetime.datetime.utcnow(), nullable=False))
 
 mapper(CasUser, cas_user_table)
@@ -64,6 +64,10 @@ def insert_entry(ticket_id, user=None):
 def delete_entry(ticket_id):
     create_cas_user_table()
     cas_user_table.delete(CasUser.ticket_id == ticket_id).execute()
+
+
+def delete_user_entry(user):
+    cas_user_table.delete(CasUser.user == user).execute()
 
 
 def is_ticket_valid(user):
