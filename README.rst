@@ -8,25 +8,6 @@
 .. image:: https://coveralls.io/repos/polarp/ckanext-cas/badge.svg
   :target: https://coveralls.io/r/polarp/ckanext-cas
 
-.. image:: https://pypip.in/download/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi//ckanext-cas/
-    :alt: Downloads
-
-.. image:: https://pypip.in/version/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Latest Version
-
-.. image:: https://pypip.in/py_versions/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Supported Python versions
-
-.. image:: https://pypip.in/status/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Development Status
-
-.. image:: https://pypip.in/license/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: License
 
 =============
 ckanext-cas
