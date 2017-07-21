@@ -80,13 +80,9 @@ class CASController(UserController):
         body.append(request)
         return etree.tostring(envelope, encoding='UTF-8')
 
-    def _generate_ns_element(prefix, element):
-        return etree.QName()
-
     def cas_saml_callback(self, **kwargs):
         log.debug('SAML CALLBACK')
         cas_plugin = p.get_plugin('cas')
-        csrf_header = config.get('csrf_cookie_name', 'csrftoken')
         log.debug(t.request.cookies)
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
@@ -106,7 +102,7 @@ class CASController(UserController):
                         if attr.get('AttributeName') in user_attrs.values():
                             data_dict[attr.get('AttributeName')] = attr['AttributeValue'].text
                 else:
-                    failure = True
+                    failure = root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusMessage'].text
             except AttributeError:
                 failure = True
 
