@@ -113,7 +113,7 @@ The current version of ``django-mama-cas`` has a bug when you use SAML as valida
 to serialize user attribute types that different from string.
 
 `Pull request <https://github.com/jbittel/django-mama-cas/pull/44>`_ has been submitted
-but if until it has been approved and merged you can use the following `fork <https://github.com/keitaroinc/django-mama-cas/tree/saml-response-errors>`_ of ``django-mama-cas``.
+but until it has been approved and merged you can use the following `fork <https://github.com/keitaroinc/django-mama-cas/tree/saml-response-errors>`_ of ``django-mama-cas``.
 
 
 ------------------------
