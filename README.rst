@@ -41,8 +41,7 @@ ckanext-cas
 Requirements
 ------------
 
-For example, you might want to mention here which versions of CKAN this
-extension works with.
+This extension works with CKAN version 2.6 and above.
 
 
 ------------
@@ -62,6 +61,7 @@ To install ckanext-cas:
 2. Install the ckanext-cas Python package into your virtual environment::
 
      pip install ckanext-cas
+     pip install -r ckanext-cas/requirements.txt
 
 3. Add ``cas`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
@@ -76,7 +76,7 @@ To install ckanext-cas:
 Config Settings
 ---------------
 
-In order to setup CKAN to use CAS you must setup the following configuration options::
+In order to configure CKAN to use CAS you must setup the following configuration options::
 
     # User attributes mapping (required)
     # ``email`` and ``user`` mappings are required
@@ -108,6 +108,21 @@ In order to setup CKAN to use CAS you must setup the following configuration opt
     ckanext.cas.register_url = http://register.django.com
 
 
+Make sure you have configured ``django-mama-cass`` properly i.e. ::
+
+    MAMA_CAS_SERVICES = [
+        {
+            'SERVICE': '^http://ckan-demo.com',
+            'CALLBACKS': [
+                'mama_cas.callbacks.user_name_attributes',
+                'mama_cas.callbacks.user_model_attributes'
+            ],
+            'LOGOUT_ALLOW': True,
+            'LOGOUT_URL': 'http://ckan-demo/cas/logout'
+        },
+    ]
+
+
 ------------------------
 Development Installation
 ------------------------
@@ -115,17 +130,21 @@ Development Installation
 To install ckanext-cas for development, activate your CKAN virtualenv and
 do::
 
-    git clone https://github.com/polarp/ckanext-cas.git
+    git clone https://github.com/keitaroinc/ckanext-cas.git
     cd ckanext-cas
     python setup.py develop
-    pip install -r dev-requirements.txt
+    pip install -r dev-requirements.txt && pip install -r requirements.txt
 
 
 -----------------
 Running the Tests
 -----------------
 
-To run the tests, do::
+In order to run the tests you must have django instance running with mama cas enabled as well as running CKAN instance.
+Both applications have to be configured according to the documentation.
+
+You might need to edit ``test.ini`` and update configuration options to match the ones from your running instances of django and CKAN.
+To execute the tests make sure you activated the virtual environment in which you've installed CKAN and type::
 
     nosetests --nologcapture --with-pylons=test.ini
 
