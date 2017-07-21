@@ -42,6 +42,7 @@ class CASClientPlugin(p.SingletonPlugin):
     CAS_COOKIE_NAME = None
     CAS_VERSION = None
     CAS_APP_URL = None
+    REDIRECT_ON_UNSUCCESSFUL_LOGIN = None
 
     def configure(self, config_):
         # Load and parse user attributes mapping
@@ -86,6 +87,7 @@ class CASClientPlugin(p.SingletonPlugin):
         self.CAS_COOKIE_NAME = config.get('ckanext.cas.cookie_name', 'sessionid')
         self.TICKET_KEY = config.get('ckanext.cas.ticket_key', 'ticket')
         self.SERVICE_KEY = config.get('ckanext.cas.service_key', 'service')
+        self.REDIRECT_ON_UNSUCCESSFUL_LOGIN = config.get('ckanext.cas.unsuccessful_login_redirect_url', None)
 
     # IConfigurer
 

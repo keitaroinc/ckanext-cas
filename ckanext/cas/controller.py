@@ -112,6 +112,8 @@ class CASController(UserController):
                 # Validation failed - ABORT
                 msg = 'Validation of ticket {0} failed with message: {1}'.format(ticket, failure)
                 log.debug(msg)
+                if cas_plugin.REDIRECT_ON_UNSUCCESSFUL_LOGIN:
+                    redirect(cas_plugin.REDIRECT_ON_UNSUCCESSFUL_LOGIN)
                 abort(401, msg)
 
             log.debug('Validation of ticket {0} succeeded.'.format(ticket))
@@ -183,6 +185,8 @@ class CASController(UserController):
                 # Validation failed - ABORT
                 msg = 'Validation of ticket {0} failed with message: {1}'.format(ticket, failure)
                 log.debug(msg)
+                if cas_plugin.REDIRECT_ON_UNSUCCESSFUL_LOGIN:
+                    redirect(cas_plugin.REDIRECT_ON_UNSUCCESSFUL_LOGIN)
                 abort(401, msg)
 
             log.debug('Validation of ticket {0} succedded. Authenticated user: {1}'.format(ticket, username.text))
