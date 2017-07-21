@@ -21,11 +21,11 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/polarp/ckanext-cas',
+    url='https://github.com/keitaroinc/ckanext-cas',
 
     # Author details
-    author='''Petar Efnushev''',
-    author_email='''petar.efnushev@keitaro.com''',
+    author='''Keitaro Inc''',
+    author_email='''info@keitaro.com''',
 
     # Choose your license
     license='AGPL',
