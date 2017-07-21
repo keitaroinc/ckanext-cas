@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 USERS = {
     'valid': {
-        'username': 'petar',
-        'password': '!@#1q2w3e4r',
-        'fullname': 'Petar Efnushev'
+        'username': 'admin',
+        'password': 'admin',
+        'fullname': 'Admin User'
     },
     'invalid': {
         'username': 'invalid',
@@ -35,6 +35,7 @@ class TestBase(object):
 
     def setup(self):
         # helpers.reset_db()
+        # TODO: Get urls from app config
         self.ckan_url = 'http://localhost:5000/'
         self.cas_url = 'http://localhost:8000/'
 
