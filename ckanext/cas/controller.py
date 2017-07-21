@@ -6,18 +6,19 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
-import datetime
 import logging
 import urllib
+import datetime
+import requests as rq
 from uuid import uuid4
 
-import ckan.lib.base as base
-import ckan.lib.helpers as h
 import ckan.logic as l
 import ckan.model as m
 import ckan.plugins as p
 import ckan.plugins.toolkit as t
-import requests as rq
+import ckan.lib.base as base
+import ckan.lib.helpers as h
+
 from ckan.controllers.user import UserController, set_repoze_user
 from ckanext.cas.db import delete_entry, delete_user_entry, insert_entry
 from lxml import etree, objectify
@@ -32,13 +33,12 @@ redirect = base.redirect
 
 CAS_NAMESPACE = 'urn:oasis:names:tc:SAML:2.0:protocol'
 XML_NAMESPACES = {'samlp': CAS_NAMESPACE}
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
 class CASController(UserController):
     def cas_logout(self):
-        log.debug('CAS LOGOUT')
-        log.debug(t.request)
-        log.debug(t.request.body)
+        log.debug('Invoked "cas_logout" method.')
 
         data = t.request.POST
         message = data.get('logoutRequest', None)
@@ -53,7 +53,8 @@ class CASController(UserController):
 
         url = h.url_for(controller='user', action='logged_out_page',
                         __ckan_no_root=True)
-        h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
+        h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'],
+                              'logout_handler_path') + '?came_from=' + url)
 
     def _generate_saml_request(self, ticket_id):
         prefixes = {'SOAP-ENV': 'http://schemas.xmlsoap.org/soap/envelope/',
@@ -73,7 +74,7 @@ class CASController(UserController):
         request.set('MajorVersion', '1')
         request.set('MinorVersion', '1')
         request.set('RequestID', uuid4().hex)
-        request.set('IssueInstant', datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        request.set('IssueInstant', datetime.datetime.utcnow().strftime(DATETIME_FORMAT))
         artifact = etree.SubElement(request, _generate_ns_element('samlp', 'AssertionArtifact'))
         artifact.text = ticket_id
 
@@ -84,10 +85,9 @@ class CASController(UserController):
         return etree.QName()
 
     def cas_saml_callback(self, **kwargs):
-        log.debug('SAML CALLBACK')
+        log.debug('Invoked "cas_saml_callback" method.')
         cas_plugin = p.get_plugin('cas')
         csrf_header = config.get('csrf_cookie_name', 'csrftoken')
-        log.debug(t.request.cookies)
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
             log.debug('Validating ticket: {0}'.format(ticket))
@@ -98,9 +98,11 @@ class CASController(UserController):
             root = objectify.fromstring(q.content)
             failure = False
             try:
-                if root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusCode'].get('Value') == 'samlp:Success':
+                if root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusCode'].get(
+                        'Value') == 'samlp:Success':
                     user_attrs = cas_plugin.USER_ATTR_MAP
-                    attributes = [x for x in root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['{urn:oasis:names:tc:SAML:1.0:assertion}Assertion']['AttributeStatement']['Attribute']]
+                    attributes = [x for x in root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response'][
+                        '{urn:oasis:names:tc:SAML:1.0:assertion}Assertion']['AttributeStatement']['Attribute']]
                     data_dict = {}
                     for attr in attributes:
                         if attr.get('AttributeName') in user_attrs.values():
@@ -111,13 +113,12 @@ class CASController(UserController):
                 failure = True
 
             if failure:
-                # TODO: Set failure to message
-                log.debug('Validation of ticket {0} failed with message: {1}'.format(ticket, failure))
+                # Validation failed - ABORT
+                msg = 'Validation of ticket {0} failed with message: {1}'.format(ticket, failure)
+                log.debug(msg)
+                abort(401, msg)
 
-            log.debug('Validation of ticket {0} succedded.'.format(ticket))
-
-            log.debug(data_dict)
-            log.debug(cas_plugin.USER_ATTR_MAP)
+            log.debug('Validation of ticket {0} succeeded.'.format(ticket))
             username = data_dict[cas_plugin.USER_ATTR_MAP['user']]
             email = data_dict[cas_plugin.USER_ATTR_MAP['email']]
             fullname = data_dict[cas_plugin.USER_ATTR_MAP['fullname']]
@@ -127,13 +128,12 @@ class CASController(UserController):
             insert_entry(ticket, username)
             redirect(t.h.url_for(controller='user', action='dashboard', id=username))
 
-        elif t.request.method.lower() == 'post':
-            log.debug(t.request)
         else:
-            log.debug('NotImplemented: {0}'.format(t.request.method))
+            msg = 'MethodNotSupported: {0}'.format(t.request.method)
+            log.debug(msg)
+            abort(405, msg)
 
     def _authenticate_user(self, username, email, fullname, is_superuser):
-        log.debug(username)
         user = m.User.get(username)
         if user is None:
             data_dict = {'name': unicode(username),
@@ -159,9 +159,8 @@ class CASController(UserController):
             return username
 
     def cas_callback(self, **kwargs):
-        log.debug('CAS CALLBACK')
+        log.debug('Invoked "cas_callback" method.')
         cas_plugin = p.get_plugin('cas')
-        log.debug(t.request.cookies)
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
             log.debug('Validating ticket: {0}'.format(ticket))
@@ -184,11 +183,11 @@ class CASController(UserController):
 
             if failure:
                 # Validation failed - ABORT
-                log.debug('Validation of ticket {0} failed with message: {1}'.format(ticket, failure))
+                msg = 'Validation of ticket {0} failed with message: {1}'.format(ticket, failure)
+                log.debug(msg)
+                abort(401, msg)
 
-            log.debug('Validation of ticket {0} succedded. Authenticated user: {1}'.format(ticket, success))
-            # user = m.User.get(username.text)
-            # if user is None:
+            log.debug('Validation of ticket {0} succedded. Authenticated user: {1}'.format(ticket, username.text))
             attrs = root.authenticationSuccess.attributes
             fullname = getattr(attrs, cas_plugin.USER_ATTR_MAP['fullname']).text
             email = getattr(attrs, cas_plugin.USER_ATTR_MAP['email']).text
@@ -201,11 +200,10 @@ class CASController(UserController):
                 sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
 
             username = self._authenticate_user(name, email, fullname, sysadmin)
-
             insert_entry(ticket, username)
             redirect(t.h.url_for(controller='user', action='dashboard', id=username))
 
-        elif t.request.method.lower() == 'post':
-            log.debug(t.request)
         else:
-            log.debug('NotImplemented: {0}'.format(t.request.method))
+            msg = 'MethodNotSupported: {0}'.format(t.request.method)
+            log.debug(msg)
+            abort(405, msg)
