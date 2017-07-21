@@ -190,7 +190,7 @@ class CASController(UserController):
             username = username.text
 
             if 'user' in cas_plugin.USER_ATTR_MAP.keys():
-                name = getattr(attrs, cas_plugin.USER_ATTR_MAP['user'])
+                name = getattr(attrs, cas_plugin.USER_ATTR_MAP['user']).text
             sysadmin = False
             if 'sysadmin' in cas_plugin.USER_ATTR_MAP.keys():
                 sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
