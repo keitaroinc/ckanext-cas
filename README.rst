@@ -76,11 +76,36 @@ To install ckanext-cas:
 Config Settings
 ---------------
 
-Document any optional config settings here. For example::
+In order to setup CKAN to use CAS you must setup the following configuration options::
 
-    # The minimum number of hours to wait before re-checking a resource
-    # (optional, default: 24).
-    ckanext.cas.some_setting = some_default_value
+    # User attributes mapping (required)
+    # ``email`` and ``user`` mappings are required
+    ckanext.cas.user_mapping = email~email user~username fullname~full_name sysadmin~is_superuser
+
+    # CAS login URL (required)
+    ckanext.cas.login_url = http://mamacas.django.com/login
+
+    # CAS logout URL (required)
+    ckanext.cas.logout_url = http://mamacas.django.com/logout
+
+    # CKAN application URL (required)
+    # The URL through which users are interacting with the application
+    ckanext.cas.application_url = https://ckan-demo.com
+
+    # CAS single sign out (optional)
+    ckanext.cas.single_sign_out = true
+
+    # CAS service validation URL (conditional)
+    # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
+    ckanext.cas.service_validation_url = http://cmamacas.django.com/serviceValidate
+
+    # CAS SAML validation URL (conditional)
+    # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
+    ckanext.cas.saml_validation_url = http://cmamacas.django.com/samlValidate
+
+    # Registration URL (optional)
+    # Overrides the default registration page of CKAN
+    ckanext.cas.register_url = http://register.django.com
 
 
 ------------------------
