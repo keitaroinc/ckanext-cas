@@ -112,19 +112,21 @@ In order to configure CKAN to use CAS you must setup the following configuration
     ckanext.cas.unsuccessful_login_redirect_url
 
 
-Make sure you have configured ``django-mama-cass`` properly i.e. ::
+Make sure you have configured ``django-mama-cas`` properly i.e. ::
 
     MAMA_CAS_SERVICES = [
         {
-            'SERVICE': '^http://ckan-demo.com',
+            'SERVICE': '^https://ckan-demo.com',
             'CALLBACKS': [
                 'mama_cas.callbacks.user_name_attributes',
                 'mama_cas.callbacks.user_model_attributes'
             ],
             'LOGOUT_ALLOW': True,
-            'LOGOUT_URL': 'http://ckan-demo/cas/logout'
+            'LOGOUT_URL': 'https://ckan-demo.com/cas/logout'
         },
     ]
+
+**NOTE:** If you use SAML as validation method for CAS have in mind that CKAN and django must be accessed over SSL.
 
 
 ------------------------
