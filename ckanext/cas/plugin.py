@@ -7,20 +7,16 @@ except ImportError:
     from pylons import config
 
 import logging
-import requests as rq
 import ckan.plugins as p
 import ckan.plugins.toolkit as t
 import ckan.lib.base as base
 import ckan.lib.helpers as h
-import ckan.logic as l
 
 render = base.render
 abort = base.abort
 redirect = base.redirect
 
-from urllib import urlencode
 from ckanext.cas.controller import CTRL
-
 from ckanext.cas.db import is_ticket_valid, delete_user_entry
 
 log = logging.getLogger(__name__)
