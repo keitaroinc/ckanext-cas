@@ -6,20 +6,21 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
-import urllib
+import datetime
 import logging
-import requests as rq
-import ckan.plugins.toolkit as t
-import ckan.lib.base as base
-import ckan.plugins as p
-import ckan.model as m
-import ckan.logic as l
-import ckan.lib.helpers as h
-
-from ckan.controllers.user import UserController, set_repoze_user
-from ckanext.cas.db import insert_entry, delete_entry, delete_user_entry
-from lxml import etree, objectify
+import urllib
 from uuid import uuid4
+
+import ckan.lib.base as base
+import ckan.lib.helpers as h
+import ckan.logic as l
+import ckan.model as m
+import ckan.plugins as p
+import ckan.plugins.toolkit as t
+import requests as rq
+from ckan.controllers.user import UserController, set_repoze_user
+from ckanext.cas.db import delete_entry, delete_user_entry, insert_entry
+from lxml import etree, objectify
 
 log = logging.getLogger(__name__)
 
@@ -54,15 +55,119 @@ class CASController(UserController):
                         __ckan_no_root=True)
         h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
 
+    def _generate_saml_request(self, ticket_id):
+        prefixes = {'SOAP-ENV': 'http://schemas.xmlsoap.org/soap/envelope/',
+                    'samlp': 'urn:oasis:names:tc:SAML:1.0:protocol'}
+
+        def _generate_ns_element(prefix, element):
+            return etree.QName(prefixes[prefix], element)
+
+        for prefix, uri in prefixes.items():
+            etree.register_namespace(prefix, uri)
+
+        envelope = etree.Element(_generate_ns_element('SOAP-ENV', 'Envelope'))
+        etree.SubElement(envelope, _generate_ns_element('SOAP-ENV', 'Header'))
+        body = etree.SubElement(envelope, _generate_ns_element('SOAP-ENV', 'Body'))
+
+        request = etree.Element(_generate_ns_element('samlp', 'Request'))
+        request.set('MajorVersion', '1')
+        request.set('MinorVersion', '1')
+        request.set('RequestID', uuid4().hex)
+        request.set('IssueInstant', datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"))
+        artifact = etree.SubElement(request, _generate_ns_element('samlp', 'AssertionArtifact'))
+        artifact.text = ticket_id
+
+        body.append(request)
+        return etree.tostring(envelope, encoding='UTF-8')
+
+    def _generate_ns_element(prefix, element):
+        return etree.QName()
+
+    def cas_saml_callback(self, **kwargs):
+        log.debug('SAML CALLBACK')
+        cas_plugin = p.get_plugin('cas')
+        csrf_header = config.get('csrf_cookie_name', 'csrftoken')
+        log.debug(t.request.cookies)
+        if t.request.method.lower() == 'get':
+            ticket = t.request.params.get(cas_plugin.TICKET_KEY)
+            log.debug('Validating ticket: {0}'.format(ticket))
+            q = rq.post(cas_plugin.SAML_VALIDATION_URL + '?TARGET=https://ckancas.com/cas/saml_callback',
+                        data=self._generate_saml_request(ticket),
+                        verify=False)  # TODO: Change to true
+
+            root = objectify.fromstring(q.content)
+            failure = False
+            try:
+                if root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusCode'].get('Value') == 'samlp:Success':
+                    user_attrs = cas_plugin.USER_ATTR_MAP
+                    attributes = [x for x in root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['{urn:oasis:names:tc:SAML:1.0:assertion}Assertion']['AttributeStatement']['Attribute']]
+                    data_dict = {}
+                    for attr in attributes:
+                        if attr.get('AttributeName') in user_attrs.values():
+                            data_dict[attr.get('AttributeName')] = attr['AttributeValue'].text
+                else:
+                    failure = True
+            except AttributeError:
+                failure = True
+
+            if failure:
+                # TODO: Set failure to message
+                log.debug('Validation of ticket {0} failed with message: {1}'.format(ticket, failure))
+
+            log.debug('Validation of ticket {0} succedded.'.format(ticket))
+
+            log.debug(data_dict)
+            log.debug(cas_plugin.USER_ATTR_MAP)
+            username = data_dict[cas_plugin.USER_ATTR_MAP['user']]
+            email = data_dict[cas_plugin.USER_ATTR_MAP['email']]
+            fullname = data_dict[cas_plugin.USER_ATTR_MAP['fullname']]
+            sysadmin = data_dict[cas_plugin.USER_ATTR_MAP['sysadmin']]
+            username = self._authenticate_user(username, email, fullname, sysadmin)
+
+            insert_entry(ticket, username)
+            redirect(t.h.url_for(controller='user', action='dashboard', id=username))
+
+        elif t.request.method.lower() == 'post':
+            log.debug(t.request)
+        else:
+            log.debug('NotImplemented: {0}'.format(t.request.method))
+
+    def _authenticate_user(self, username, email, fullname, is_superuser):
+        log.debug(username)
+        user = m.User.get(username)
+        if user is None:
+            data_dict = {'name': unicode(username),
+                         'email': email,
+                         'fullname': fullname,
+                         'password': uuid4().hex}
+            try:
+                user_obj = l.get_action('user_create')({'ignore_auth': True}, data_dict)
+            except Exception as e:
+                log.debug('Error while creating user')
+                log.debug(e)
+
+            if is_superuser:
+                # TODO: Make user sysadmin
+                print is_superuser
+
+            set_repoze_user(user_obj['name'])
+            delete_user_entry(user_obj['name'])
+            return user_obj['name']
+        else:
+            set_repoze_user(username)
+            delete_user_entry(username)
+            return username
+
     def cas_callback(self, **kwargs):
         log.debug('CAS CALLBACK')
         cas_plugin = p.get_plugin('cas')
+        log.debug(t.request.cookies)
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.get(cas_plugin.SERVICE_VALIDATION_URL,
                        params={cas_plugin.TICKET_KEY: ticket,
-                               cas_plugin.SERVICE_KEY: config.get('ckan.site_url') + '/cas/callback'})
+                               cas_plugin.SERVICE_KEY: config.get('ckanext.cas.application_url') + '/cas/callback'})
 
             root = objectify.fromstring(q.content)
             try:
@@ -82,42 +187,23 @@ class CASController(UserController):
                 log.debug('Validation of ticket {0} failed with message: {1}'.format(ticket, failure))
 
             log.debug('Validation of ticket {0} succedded. Authenticated user: {1}'.format(ticket, success))
-            user = m.User.get(username.text)
-            if user is None:
-                attrs = root.authenticationSuccess.attributes
-                fullname = getattr(attrs, cas_plugin.USER_ATTR_MAP['fullname'])
-                email = getattr(attrs, cas_plugin.USER_ATTR_MAP['email'])
-                name = username.text
-                if 'user' in cas_plugin.USER_ATTR_MAP.keys():
-                    name = getattr(attrs, cas_plugin.USER_ATTR_MAP['user'])
-                sysadmin = False
-                if 'sysadmin' in cas_plugin.USER_ATTR_MAP.keys():
-                    sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
+            # user = m.User.get(username.text)
+            # if user is None:
+            attrs = root.authenticationSuccess.attributes
+            fullname = getattr(attrs, cas_plugin.USER_ATTR_MAP['fullname']).text
+            email = getattr(attrs, cas_plugin.USER_ATTR_MAP['email']).text
+            username = username.text
 
-                data_dict = {'name': unicode(name),
-                             'email': email.text,
-                             'fullname': fullname.text,
-                             'password': uuid4().hex}
-                try:
-                    user_obj = l.get_action('user_create')({'ignore_auth': True}, data_dict)
-                except Exception as e:
-                    log.debug('Error while creating user')
-                    log.debug(e)
+            if 'user' in cas_plugin.USER_ATTR_MAP.keys():
+                name = getattr(attrs, cas_plugin.USER_ATTR_MAP['user'])
+            sysadmin = False
+            if 'sysadmin' in cas_plugin.USER_ATTR_MAP.keys():
+                sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
 
-                if sysadmin:
-                    # TODO: Make user sysadmin
-                    print sysadmin
+            username = self._authenticate_user(name, email, fullname, sysadmin)
 
-                set_repoze_user(user_obj['name'])
-                delete_user_entry(user_obj['name'])
-                insert_entry(ticket, user.name)
-                redirect(t.h.url_for(controller='user', action='dashboard', id=user_obj['name']))
-
-            else:
-                set_repoze_user(user.name)
-                delete_user_entry(user.name)
-                insert_entry(ticket, user.name)
-                redirect(t.h.url_for(controller='user', action='dashboard', id=user.name))
+            insert_entry(ticket, username)
+            redirect(t.h.url_for(controller='user', action='dashboard', id=username))
 
         elif t.request.method.lower() == 'post':
             log.debug(t.request)
