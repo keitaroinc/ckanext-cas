@@ -103,6 +103,10 @@ class CASClientPlugin(p.SingletonPlugin):
         map.connect('cas_saml_callback', '/cas/saml_callback', controller=CTRL, action='cas_saml_callback')
         # Register callback for SSO (Single Sign Out)
         map.connect('cas_logout', '/cas/logout', controller=CTRL, action='cas_logout')
+
+        if config.get('ckanext.cas.register_url', None):
+            map.redirect('/user/register', config.get('ckanext.cas.register_url'))
+
         return map
 
     def identify(self):
