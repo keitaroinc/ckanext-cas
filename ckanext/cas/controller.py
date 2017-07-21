@@ -139,12 +139,14 @@ class CASController(UserController):
             try:
                 user_obj = l.get_action('user_create')({'ignore_auth': True}, data_dict)
             except Exception as e:
-                log.debug('Error while creating user')
-                log.debug(e)
+                log.error(e)
 
             if is_superuser:
-                # TODO: Make user sysadmin
-                print is_superuser
+                try:
+                    user_obj.update({'sysadmin': True})
+                    l.get_action('user_update')({'ignore_auth': True}, user_obj)
+                except Exception as e:
+                    log.error(e)
 
             set_repoze_user(user_obj['name'])
             delete_user_entry(user_obj['name'])
@@ -190,12 +192,12 @@ class CASController(UserController):
             username = username.text
 
             if 'user' in cas_plugin.USER_ATTR_MAP.keys():
-                name = getattr(attrs, cas_plugin.USER_ATTR_MAP['user']).text
+                username = getattr(attrs, cas_plugin.USER_ATTR_MAP['user']).text
             sysadmin = False
             if 'sysadmin' in cas_plugin.USER_ATTR_MAP.keys():
                 sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
 
-            username = self._authenticate_user(name, email, fullname, sysadmin)
+            username = self._authenticate_user(username, email, fullname, sysadmin)
             insert_entry(ticket, username)
             redirect(t.h.url_for(controller='user', action='dashboard', id=username))
 
