@@ -107,6 +107,10 @@ In order to configure CKAN to use CAS you must setup the following configuration
     # Overrides the default registration page of CKAN
     ckanext.cas.register_url = http://register.django.com
 
+    # Unsuccessful login redirect URL (optional)
+    # When login is unsuccessful redirect users to this URL
+    ckanext.cas.unsuccessful_login_redirect_url
+
 
 Make sure you have configured ``django-mama-cass`` properly i.e. ::
 
