@@ -41,6 +41,7 @@ class CASClientPlugin(p.SingletonPlugin):
     CAS_LOGIN_URL = None
     CAS_COOKIE_NAME = None
     CAS_VERSION = None
+    CAS_APP_URL = None
 
     def configure(self, config_):
         # Load and parse user attributes mapping
@@ -69,6 +70,9 @@ class CASClientPlugin(p.SingletonPlugin):
         if not config.get('ckanext.cas.logout_url', None):
             raise RuntimeError, '"ckanext.cas.logout_url" is required for plugin: {0}'.format(self.name)
 
+        if not config.get('ckanext.cas.application_url', None):
+            raise RuntimeError, '"ckanext.cas.application_url" is required for plugin: {0}'.format(self.name)
+
         if service_validation_url:
             self.SERVICE_VALIDATION_URL = config.get('ckanext.cas.service_validation_url')
             self.CAS_VERSION = 2
@@ -78,6 +82,7 @@ class CASClientPlugin(p.SingletonPlugin):
 
         self.CAS_LOGIN_URL = config.get('ckanext.cas.login_url')
         self.CAS_LOGOUT_URL = config.get('ckanext.cas.logout_url')
+        self.CAS_APP_URL = config.get('ckanext.cas.application_url')
         self.CAS_COOKIE_NAME = config.get('ckanext.cas.cookie_name', 'sessionid')
         self.TICKET_KEY = config.get('ckanext.cas.ticket_key', 'ticket')
         self.SERVICE_KEY = config.get('ckanext.cas.service_key', 'service')
@@ -110,9 +115,9 @@ class CASClientPlugin(p.SingletonPlugin):
 
     def _generate_login_url(self):
         if self.CAS_VERSION == 2:
-            return self.CAS_LOGIN_URL + '?service=' + config.get('ckanext.cas.application_url') + '/cas/callback'
+            return self.CAS_LOGIN_URL + '?service=' + self.CAS_APP_URL + '/cas/callback'
         elif self.CAS_VERSION == 3:
-            return self.CAS_LOGIN_URL + '?service=' + config.get('ckanext.cas.application_url') + '/cas/saml_callback'
+            return self.CAS_LOGIN_URL + '?service=' + self.CAS_APP_URL + '/cas/saml_callback'
 
     def login(self):
         cas_login_url = self._generate_login_url()
@@ -121,8 +126,7 @@ class CASClientPlugin(p.SingletonPlugin):
     def logout(self):
         delete_user_entry(t.c.user)
         if t.asbool(config.get('ckanext.cas.single_sign_out')):
-            cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + config.get(
-                'ckanext.cas.application_url') + '/cas/logout'
+            cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + self.CAS_APP_URL + '/cas/logout'
             redirect(cas_logout_url)
         # TODO: Refactor into helper
         url = h.url_for(controller='user', action='logged_out_page',
