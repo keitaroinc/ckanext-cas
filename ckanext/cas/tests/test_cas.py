@@ -1,7 +1,9 @@
 import logging
-import helpers.cas as cas
+import requests as rq
 
+from lxml import html
 from ckan import plugins
+from ckanext.cas.db import delete_user_entry
 
 try:
     from ckan.tests import helpers
@@ -12,17 +14,29 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
-cas.serve()
+USERS = {
+    'valid': {
+        'username': 'petar',
+        'password': '!@#1q2w3e4r',
+        'fullname': 'Petar Efnushev'
+    },
+    'invalid': {
+        'username': 'invalid',
+        'password': 'user'
+    }
+}
 
 
-class ActionBase(object):
+class TestBase(object):
     @classmethod
     def setup_class(self):
         if not plugins.plugin_loaded('cas'):
             plugins.load('cas')
 
     def setup(self):
-        helpers.reset_db()
+        # helpers.reset_db()
+        self.ckan_url = 'http://localhost:5000/'
+        self.cas_url = 'http://localhost:8000/'
 
     @classmethod
     def teardown_class(self):
@@ -30,19 +44,71 @@ class ActionBase(object):
             plugins.unload('cas')
 
 
-class TestCASClient(ActionBase):
-    @classmethod
-    def setup(cls):
-        pass
+class TestCASClient(TestBase):
+    def test_invalid_login(self):
+        r = rq.get(self.ckan_url + 'user/login')
+        data_dict = USERS.get('invalid')
+        doc = html.fromstring(r.content)
+        csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
+        data_dict.update({'csrfmiddlewaretoken': csrf_token})
 
-    def test_login_with_invalid_credentials(self):
-        pass
+        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+                    data=data_dict,
+                    cookies=r.cookies)
 
-    def test_login_with_valid_credentials(self):
+        assert 'The username or password is not correct' in r.content
+
+    def test_service_login_with_valid_credentials(self):
+        r = rq.get('http://localhost:5000/user/login')
+        data_dict = USERS.get('valid')
+        doc = html.fromstring(r.content)
+        csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
+        data_dict.update({'csrfmiddlewaretoken': csrf_token})
+
+        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+                    data=data_dict,
+                    cookies=r.cookies,
+                    allow_redirects=False)
+
+        # Permit redirects to save the auth cookie
+        sessionid = r.cookies.get('sessionid', None)
+        r = rq.get(r.headers['Location'], cookies=r.cookies, allow_redirects=False)
+        auth_tkt = r.cookies.get('auth_tkt', None)
+        r = rq.get(r.headers['Location'], cookies=r.cookies)
+
+        assert '<a href="/dashboard">Dashboard</a>' in r.content
+        assert '<span class="username">{0}</span>'.format(data_dict['fullname']) in r.content
+
+    def test_saml_login_with_valid_credentials(self):
         pass
 
     def test_application_logout(self):
         pass
 
     def test_single_logout(self):
-        pass
+        r = rq.get('http://localhost:5000/user/login')
+        data_dict = USERS.get('valid')
+        doc = html.fromstring(r.content)
+        csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
+        data_dict.update({'csrfmiddlewaretoken': csrf_token})
+
+        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+                    data=data_dict,
+                    cookies=r.cookies,
+                    allow_redirects=False)
+
+        sessionid = r.cookies.get('sessionid', None)
+        r = rq.get(r.headers['Location'], cookies=r.cookies, allow_redirects=False)
+
+        auth_tkt = r.cookies.get('auth_tkt', None)
+        r = rq.get(r.headers['Location'], cookies={'auth_tkt': auth_tkt[1:-1]}, allow_redirects=False)
+
+        assert '<a href="/dashboard">Dashboard</a>' in r.content
+        assert '<span class="username">{0}</span>'.format(data_dict['fullname']) in r.content
+
+        logout_url = self.cas_url + 'logout?service={0}'.format(self.ckan_url + 'cas/logout')
+        r = rq.get(logout_url, cookies={'sessionid': sessionid}, allow_redirects=False)
+
+        r = rq.get(self.ckan_url + 'dashboard', cookies={'auth_tkt': auth_tkt[1:-1]}, allow_redirects=False)
+        assert '<a href="/dashboard">Dashboard</a>' not in r.content
+        assert '<span class="username">{0}</span>'.format(data_dict['fullname']) not in r.content
