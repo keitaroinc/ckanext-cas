@@ -55,10 +55,13 @@ class CASClientPlugin(p.SingletonPlugin):
         if 'email' not in self.USER_ATTR_MAP.keys():
             raise RuntimeError, '"email" attribute mapping is required for plugin: {0}'.format(self.name)
 
-        if config.get('ckanext.cas.service_validation_url', None) and config.get('ckanext.cas.saml_validation_url', None):
+        if config.get('ckanext.cas.service_validation_url', None) and config.get('ckanext.cas.saml_validation_url',
+                                                                                 None):
             raise RuntimeError, 'Only one of "ckanext.cas.service_validation_url" and "ckanext.cas.saml_validation_url" should be set'
-        elif not config.get('ckanext.cas.service_validation_url', None) and not config.get('ckanext.cas.saml_validation_url', None):
-            raise RuntimeError, 'One of "ckanext.cas.service_validation_url" or "ckanext.cas.saml_validation_url" is required for plugin: {0}'.format(self.name)
+        elif not config.get('ckanext.cas.service_validation_url', None) and not config.get(
+                'ckanext.cas.saml_validation_url', None):
+            raise RuntimeError, 'One of "ckanext.cas.service_validation_url" or "ckanext.cas.saml_validation_url" is required for plugin: {0}'.format(
+                self.name)
 
         if not config.get('ckanext.cas.login_url', None):
             raise RuntimeError, '"ckanext.cas.login_url" is required for plugin: {0}'.format(self.name)
@@ -93,16 +96,14 @@ class CASClientPlugin(p.SingletonPlugin):
         return map
 
     def identify(self):
-        log.debug('IN IDENTIFY METHOD')
-
         environ = t.request.environ
         remote_user = environ.get('REMOTE_USER', None)
-        log.debug(remote_user)
         if remote_user and not is_ticket_valid(remote_user):
             log.debug('User logged out of CAS Server')
             url = h.url_for(controller='user', action='logged_out_page',
-                        __ckan_no_root=True)
-            h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
+                            __ckan_no_root=True)
+            h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'],
+                                  'logout_handler_path') + '?came_from=' + url)
 
     def _generate_login_url(self):
         if self.CAS_VERSION == 2:
@@ -111,22 +112,17 @@ class CASClientPlugin(p.SingletonPlugin):
             return self.CAS_LOGIN_URL + '?service=' + config.get('ckanext.cas.application_url') + '/cas/saml_callback'
 
     def login(self):
-        log.debug('PLUGIN LOGIN')
         cas_login_url = self._generate_login_url()
         redirect(cas_login_url)
 
     def logout(self):
         delete_user_entry(t.c.user)
-        log.debug('PLUGIN LOGOUT')
         if t.asbool(config.get('ckanext.cas.single_sign_out')):
-            cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + config.get('ckanext.cas.application_url') + '/cas/logout'
+            cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + config.get(
+                'ckanext.cas.application_url') + '/cas/logout'
             redirect(cas_logout_url)
         # TODO: Refactor into helper
         url = h.url_for(controller='user', action='logged_out_page',
                         __ckan_no_root=True)
-        h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'], 'logout_handler_path') + '?came_from=' + url)
-
-    def abort(self, status_code, detail, headers, comment):
-        c = t.c
-        log.debug('PLUGIN ABORT')
-        log.debug(c)
+        h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'],
+                              'logout_handler_path') + '?came_from=' + url)
