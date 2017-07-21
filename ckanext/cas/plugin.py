@@ -43,25 +43,25 @@ class CASClientPlugin(p.SingletonPlugin):
     CAS_VERSION = None
 
     def configure(self, config_):
-
+        # Load and parse user attributes mapping
         user_mapping = t.aslist(config_.get('ckanext.cas.user_mapping'))
         for attr in user_mapping:
             key, val = attr.split('~')
             self.USER_ATTR_MAP.update({key: val})
 
         if not any(self.USER_ATTR_MAP):
-            raise RuntimeError, 'Attribute map is required for plugin: {0}'.format(self.name)
+            raise RuntimeError, 'User attribute mapping is required for plugin: {0}'.format(self.name)
 
         if 'email' not in self.USER_ATTR_MAP.keys():
             raise RuntimeError, '"email" attribute mapping is required for plugin: {0}'.format(self.name)
 
-        if config.get('ckanext.cas.service_validation_url', None) and config.get('ckanext.cas.saml_validation_url',
-                                                                                 None):
-            raise RuntimeError, 'Only one of "ckanext.cas.service_validation_url" and "ckanext.cas.saml_validation_url" should be set'
-        elif not config.get('ckanext.cas.service_validation_url', None) and not config.get(
-                'ckanext.cas.saml_validation_url', None):
-            raise RuntimeError, 'One of "ckanext.cas.service_validation_url" or "ckanext.cas.saml_validation_url" is required for plugin: {0}'.format(
-                self.name)
+        service_validation_url = config.get('ckanext.cas.service_validation_url', None)
+        saml_validation_url = config.get('ckanext.cas.saml_validation_url', None)
+
+        if (service_validation_url and saml_validation_url) or \
+                (not service_validation_url and not saml_validation_url):
+            msg = 'Configure either "ckanext.cas.service_validation_url" or "ckanext.cas.saml_validation_url" but not both.'
+            raise RuntimeError, msg
 
         if not config.get('ckanext.cas.login_url', None):
             raise RuntimeError, '"ckanext.cas.login_url" is required for plugin: {0}'.format(self.name)
@@ -69,10 +69,10 @@ class CASClientPlugin(p.SingletonPlugin):
         if not config.get('ckanext.cas.logout_url', None):
             raise RuntimeError, '"ckanext.cas.logout_url" is required for plugin: {0}'.format(self.name)
 
-        if config.get('ckanext.cas.service_validation_url', None):
+        if service_validation_url:
             self.SERVICE_VALIDATION_URL = config.get('ckanext.cas.service_validation_url')
             self.CAS_VERSION = 2
-        elif config.get('ckanext.cas.saml_validation_url', None):
+        elif saml_validation_url:
             self.SAML_VALIDATION_URL = config.get('ckanext.cas.saml_validation_url')
             self.CAS_VERSION = 3
 
@@ -90,8 +90,11 @@ class CASClientPlugin(p.SingletonPlugin):
         t.add_resource('fanstatic', 'cas')
 
     def before_map(self, map):
+        # Register callback for service validation (CAS 2.0, CAS 3.0)
         map.connect('cas_callback', '/cas/callback', controller=CTRL, action='cas_callback')
+        # Register callback for service validation (CAS 3.0)
         map.connect('cas_saml_callback', '/cas/saml_callback', controller=CTRL, action='cas_saml_callback')
+        # Register callback for SSO (Single Sign Out)
         map.connect('cas_logout', '/cas/logout', controller=CTRL, action='cas_logout')
         return map
 
