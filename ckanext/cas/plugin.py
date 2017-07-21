@@ -21,7 +21,7 @@ redirect = base.redirect
 from urllib import urlencode
 from ckanext.cas.controller import CTRL
 
-from ckanext.cas.db import is_ticket_valid
+from ckanext.cas.db import is_ticket_valid, delete_user_entry
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ class CASClientPlugin(p.SingletonPlugin):
         redirect(cas_login_url)
 
     def logout(self):
+        delete_user_entry(t.c.user)
         log.debug('PLUGIN LOGOUT')
         if t.asbool(config.get('ckanext.cas.single_sign_out')):
             cas_logout_url = self.CAS_LOGOUT_URL + '?service=' + config.get('ckan.site_url') + '/cas/logout'
