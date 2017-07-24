@@ -159,6 +159,13 @@ class CASController(UserController):
             delete_user_entry(user_obj['name'])
             return user_obj['name']
         else:
+            try:
+                user_obj = {'id': username,
+                            'email': email,
+                            'fullname': fullname}
+                l.get_action('user_update')({'ignore_auth': True}, user_obj)
+            except Exception as e:
+                log.error(e)
             set_repoze_user(username)
             delete_user_entry(username)
             return username
