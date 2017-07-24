@@ -6,20 +6,19 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
-import logging
-import urllib
 import datetime
+import logging
 import time
-import requests as rq
+import urllib
 from uuid import uuid4
 
+import ckan.lib.base as base
+import ckan.lib.helpers as h
 import ckan.logic as l
 import ckan.model as m
 import ckan.plugins as p
 import ckan.plugins.toolkit as t
-import ckan.lib.base as base
-import ckan.lib.helpers as h
-
+import requests as rq
 from ckan.controllers.user import UserController, set_repoze_user
 from ckanext.cas.db import delete_entry, delete_user_entry, insert_entry
 from lxml import etree, objectify

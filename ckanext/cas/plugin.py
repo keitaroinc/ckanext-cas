@@ -7,22 +7,18 @@ except ImportError:
     from pylons import config
 
 import logging
-import time
-import requests as rq
-import ckan.plugins as p
-import ckan.plugins.toolkit as t
+
 import ckan.lib.base as base
 import ckan.lib.helpers as h
-import ckan.logic as l
+import ckan.plugins as p
+import ckan.plugins.toolkit as t
+from ckanext.cas.controller import CTRL, CASController
+from ckanext.cas.db import delete_user_entry, is_ticket_valid
 
 render = base.render
 abort = base.abort
 redirect = base.redirect
 
-from urllib import urlencode
-from ckanext.cas.controller import CTRL, CASController
-
-from ckanext.cas.db import is_ticket_valid, delete_user_entry
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +102,10 @@ class CASClientPlugin(p.SingletonPlugin):
         map.connect('cas_saml_callback', '/cas/saml_callback', controller=CTRL, action='cas_saml_callback')
         # Register callback for SSO (Single Sign Out)
         map.connect('cas_logout', '/cas/logout', controller=CTRL, action='cas_logout')
+
+        if config.get('ckanext.cas.register_url', None):
+            map.redirect('/user/register', config.get('ckanext.cas.register_url'))
+
         return map
 
     def identify(self):

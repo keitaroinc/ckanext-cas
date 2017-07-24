@@ -1,11 +1,11 @@
+import logging
+import datetime
+import sqlalchemy.exc
+import ckan.plugins.toolkit as t
+
 from ckan.model import domain_object
 from ckan.model.meta import Session, metadata, mapper
 from sqlalchemy import types, Column, Table, ForeignKey, func, CheckConstraint, UniqueConstraint
-import sqlalchemy.exc
-
-import ckan.plugins.toolkit as t
-import datetime
-import logging
 
 log = logging.getLogger(__name__)
 

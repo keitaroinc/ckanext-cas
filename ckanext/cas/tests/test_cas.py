@@ -3,7 +3,7 @@ import requests as rq
 
 from lxml import html
 from ckan import plugins
-from ckanext.cas.db import delete_user_entry
+from ckan.common import config
 
 try:
     from ckan.tests import helpers
@@ -16,9 +16,9 @@ log = logging.getLogger(__name__)
 
 USERS = {
     'valid': {
-        'username': 'petar',
-        'password': '!@#1q2w3e4r',
-        'fullname': 'Petar Efnushev'
+        'username': 'admin',
+        'password': 'admin',
+        'fullname': 'Admin User'
     },
     'invalid': {
         'username': 'invalid',
@@ -34,9 +34,9 @@ class TestBase(object):
             plugins.load('cas')
 
     def setup(self):
-        # helpers.reset_db()
-        self.ckan_url = 'http://localhost:5000/'
-        self.cas_url = 'http://localhost:8000/'
+        self.ckan_url = config.get('ckanext.cas.application_url')
+        self.cas_login_url = config.get('ckanext.cas.login_url')
+        self.cas_logout_url = config.get('ckanext.cas.logout_url')
 
     @classmethod
     def teardown_class(self):
@@ -52,20 +52,20 @@ class TestCASClient(TestBase):
         csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
         data_dict.update({'csrfmiddlewaretoken': csrf_token})
 
-        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+        r = rq.post(self.cas_login_url + '?service={0}'.format(self.ckan_url + 'cas/callback'),
                     data=data_dict,
                     cookies=r.cookies)
 
         assert 'The username or password is not correct' in r.content
 
     def test_service_login_with_valid_credentials(self):
-        r = rq.get('http://localhost:5000/user/login')
+        r = rq.get(self.ckan_url + '/user/login')
         data_dict = USERS.get('valid')
         doc = html.fromstring(r.content)
         csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
         data_dict.update({'csrfmiddlewaretoken': csrf_token})
 
-        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+        r = rq.post(self.cas_url + '?service={0}'.format(self.ckan_url + 'cas/callback'),
                     data=data_dict,
                     cookies=r.cookies,
                     allow_redirects=False)
@@ -86,13 +86,13 @@ class TestCASClient(TestBase):
         pass
 
     def test_single_logout(self):
-        r = rq.get('http://localhost:5000/user/login')
+        r = rq.get(self.ckan_url + '/user/login')
         data_dict = USERS.get('valid')
         doc = html.fromstring(r.content)
         csrf_token = doc.xpath('//input[@name="csrfmiddlewaretoken"]/@value')[0]
         data_dict.update({'csrfmiddlewaretoken': csrf_token})
 
-        r = rq.post(self.cas_url + 'login?service={0}'.format(self.ckan_url + 'cas/callback'),
+        r = rq.post(self.cas_login_url + '?service={0}'.format(self.ckan_url + 'cas/callback'),
                     data=data_dict,
                     cookies=r.cookies,
                     allow_redirects=False)
@@ -106,7 +106,7 @@ class TestCASClient(TestBase):
         assert '<a href="/dashboard">Dashboard</a>' in r.content
         assert '<span class="username">{0}</span>'.format(data_dict['fullname']) in r.content
 
-        logout_url = self.cas_url + 'logout?service={0}'.format(self.ckan_url + 'cas/logout')
+        logout_url = self.cas_logout_url + '?service={0}'.format(self.ckan_url + 'cas/logout')
         r = rq.get(logout_url, cookies={'sessionid': sessionid}, allow_redirects=False)
 
         r = rq.get(self.ckan_url + 'dashboard', cookies={'auth_tkt': auth_tkt[1:-1]}, allow_redirects=False)

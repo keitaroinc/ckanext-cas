@@ -8,25 +8,6 @@
 .. image:: https://coveralls.io/repos/polarp/ckanext-cas/badge.svg
   :target: https://coveralls.io/r/polarp/ckanext-cas
 
-.. image:: https://pypip.in/download/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi//ckanext-cas/
-    :alt: Downloads
-
-.. image:: https://pypip.in/version/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Latest Version
-
-.. image:: https://pypip.in/py_versions/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Supported Python versions
-
-.. image:: https://pypip.in/status/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: Development Status
-
-.. image:: https://pypip.in/license/ckanext-cas/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-cas/
-    :alt: License
 
 =============
 ckanext-cas
@@ -41,8 +22,7 @@ ckanext-cas
 Requirements
 ------------
 
-For example, you might want to mention here which versions of CKAN this
-extension works with.
+This extension works with CKAN version 2.6 and above.
 
 
 ------------
@@ -62,6 +42,7 @@ To install ckanext-cas:
 2. Install the ckanext-cas Python package into your virtual environment::
 
      pip install ckanext-cas
+     pip install -r ckanext-cas/requirements.txt
 
 3. Add ``cas`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
@@ -76,11 +57,63 @@ To install ckanext-cas:
 Config Settings
 ---------------
 
-Document any optional config settings here. For example::
+In order to configure CKAN to use CAS you must setup the following configuration options::
 
-    # The minimum number of hours to wait before re-checking a resource
-    # (optional, default: 24).
-    ckanext.cas.some_setting = some_default_value
+    # User attributes mapping (required)
+    # ``email`` and ``user`` mappings are required
+    ckanext.cas.user_mapping = email~email user~username fullname~full_name sysadmin~is_superuser
+
+    # CAS login URL (required)
+    ckanext.cas.login_url = http://mamacas.django.com/login
+
+    # CAS logout URL (required)
+    ckanext.cas.logout_url = http://mamacas.django.com/logout
+
+    # CKAN application URL (required)
+    # The URL through which users are interacting with the application
+    ckanext.cas.application_url = https://ckan-demo.com
+
+    # CAS single sign out (optional)
+    ckanext.cas.single_sign_out = true
+
+    # CAS service validation URL (conditional)
+    # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
+    ckanext.cas.service_validation_url = http://cmamacas.django.com/serviceValidate
+
+    # CAS SAML validation URL (conditional)
+    # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
+    ckanext.cas.saml_validation_url = http://cmamacas.django.com/samlValidate
+
+    # Registration URL (optional)
+    # Overrides the default registration page of CKAN
+    ckanext.cas.register_url = http://register.django.com
+
+    # Unsuccessful login redirect URL (optional)
+    # When login is unsuccessful redirect users to this URL
+    ckanext.cas.unsuccessful_login_redirect_url
+
+
+Make sure you have configured ``django-mama-cas`` properly i.e. ::
+
+    MAMA_CAS_SERVICES = [
+        {
+            'SERVICE': '^https://ckan-demo.com',
+            'CALLBACKS': [
+                'mama_cas.callbacks.user_name_attributes',
+                'mama_cas.callbacks.user_model_attributes'
+            ],
+            'LOGOUT_ALLOW': True,
+            'LOGOUT_URL': 'https://ckan-demo.com/cas/logout'
+        },
+    ]
+
+**NOTE:** If you use SAML as validation method for CAS have in mind that CKAN and django must be accessed over SSL.
+
+The current version of ``django-mama-cas`` has a bug when you use SAML as validation method since it is unable
+to serialize user attribute types that different from string.
+
+`Pull request <https://github.com/jbittel/django-mama-cas/pull/44>`_ has been submitted
+but until it has been approved and merged you can use the following `fork <https://github.com/keitaroinc/django-mama-cas/tree/saml-response-errors>`_ of ``django-mama-cas``.
 
 
 ------------------------
@@ -90,17 +123,21 @@ Development Installation
 To install ckanext-cas for development, activate your CKAN virtualenv and
 do::
 
-    git clone https://github.com/polarp/ckanext-cas.git
+    git clone https://github.com/keitaroinc/ckanext-cas.git
     cd ckanext-cas
     python setup.py develop
-    pip install -r dev-requirements.txt
+    pip install -r dev-requirements.txt && pip install -r requirements.txt
 
 
 -----------------
 Running the Tests
 -----------------
 
-To run the tests, do::
+In order to run the tests you must have django instance running with mama cas enabled as well as running CKAN instance.
+Both applications have to be configured according to the documentation.
+
+You might need to edit ``test.ini`` and update configuration options to match the ones from your running instances of django and CKAN.
+To execute the tests make sure you activated the virtual environment in which you've installed CKAN and type::
 
     nosetests --nologcapture --with-pylons=test.ini
 
