@@ -7,6 +7,7 @@ except ImportError:
     from pylons import config
 
 import logging
+import time
 import requests as rq
 import ckan.plugins as p
 import ckan.plugins.toolkit as t
@@ -19,7 +20,7 @@ abort = base.abort
 redirect = base.redirect
 
 from urllib import urlencode
-from ckanext.cas.controller import CTRL
+from ckanext.cas.controller import CTRL, CASController
 
 from ckanext.cas.db import is_ticket_valid, delete_user_entry
 
@@ -88,6 +89,8 @@ class CASClientPlugin(p.SingletonPlugin):
         self.TICKET_KEY = config.get('ckanext.cas.ticket_key', 'ticket')
         self.SERVICE_KEY = config.get('ckanext.cas.service_key', 'service')
         self.REDIRECT_ON_UNSUCCESSFUL_LOGIN = config.get('ckanext.cas.unsuccessful_login_redirect_url', None)
+        self.LOGIN_CHECKUP_TIME = t.asint(config.get('ckanext.cas.login_checkup_time', 600))
+        self.LOGIN_CHECKUP_COOKIE = config.get('ckanext.cas.login_checkup_cookie', 'cas_login_check')
 
     # IConfigurer
 
@@ -114,12 +117,25 @@ class CASClientPlugin(p.SingletonPlugin):
                             __ckan_no_root=True)
             h.redirect_to(getattr(t.request.environ['repoze.who.plugins']['friendlyform'],
                                   'logout_handler_path') + '?came_from=' + url)
+        elif not remote_user and not isinstance(environ['pylons.controller'], CASController):
+            login_checkup_cookie = t.request.cookies.get(self.LOGIN_CHECKUP_COOKIE, None)
+            if login_checkup_cookie:
+                return
+            log.debug('Checking is CAS session exists for user')
+            url = self._generate_login_url(gateway=True, next=True)
+            redirect(url)
 
-    def _generate_login_url(self):
+    def _generate_login_url(self, gateway=False, next=False):
+        params = '?service='
+        if gateway:
+            params = '?gateway=true&service='
         if self.CAS_VERSION == 2:
-            return self.CAS_LOGIN_URL + '?service=' + self.CAS_APP_URL + '/cas/callback'
+            url = self.CAS_LOGIN_URL + params + self.CAS_APP_URL + '/cas/callback'
         elif self.CAS_VERSION == 3:
-            return self.CAS_LOGIN_URL + '?service=' + self.CAS_APP_URL + '/cas/saml_callback'
+            url = self.CAS_LOGIN_URL + params + self.CAS_APP_URL + '/cas/saml_callback'
+        if next:
+            url = url + '?next=' + t.request.environ['CKAN_CURRENT_URL']
+        return url
 
     def login(self):
         cas_login_url = self._generate_login_url()

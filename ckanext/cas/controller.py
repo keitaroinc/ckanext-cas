@@ -9,6 +9,7 @@ except ImportError:
 import logging
 import urllib
 import datetime
+import time
 import requests as rq
 from uuid import uuid4
 
@@ -86,6 +87,11 @@ class CASController(UserController):
         cas_plugin = p.get_plugin('cas')
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
+            if not ticket:
+                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()), max_age=cas_plugin.LOGIN_CHECKUP_TIME)
+                next_url = t.request.params.get('next')
+                redirect(cas_plugin.CAS_APP_URL + next_url)
+
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.post(cas_plugin.SAML_VALIDATION_URL + '?TARGET={0}/cas/saml_callback'.format(cas_plugin.CAS_APP_URL),
                         data=self._generate_saml_request(ticket),
@@ -163,6 +169,11 @@ class CASController(UserController):
         cas_plugin = p.get_plugin('cas')
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
+            if not ticket:
+                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()), max_age=cas_plugin.LOGIN_CHECKUP_TIME)
+                next_url = t.request.params.get('next')
+                redirect(cas_plugin.CAS_APP_URL + next_url)
+
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.get(cas_plugin.SERVICE_VALIDATION_URL,
                        params={cas_plugin.TICKET_KEY: ticket,
