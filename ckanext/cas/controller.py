@@ -87,7 +87,8 @@ class CASController(UserController):
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
             if not ticket:
-                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()), max_age=cas_plugin.LOGIN_CHECKUP_TIME)
+                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()),
+                                      max_age=cas_plugin.LOGIN_CHECKUP_TIME)
                 next_url = t.request.params.get('next')
                 redirect(cas_plugin.CAS_APP_URL + next_url)
 
@@ -109,7 +110,8 @@ class CASController(UserController):
                         if attr.get('AttributeName') in user_attrs.values():
                             data_dict[attr.get('AttributeName')] = attr['AttributeValue'].text
                 else:
-                    failure = root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusMessage'].text
+                    failure = root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status'][
+                        'StatusMessage'].text
             except AttributeError:
                 failure = True
 
@@ -162,7 +164,8 @@ class CASController(UserController):
             try:
                 user_obj = {'id': username,
                             'email': email,
-                            'fullname': fullname}
+                            'fullname': fullname,
+                            'sysadmin': is_superuser}
                 l.get_action('user_update')({'ignore_auth': True}, user_obj)
             except Exception as e:
                 log.error(e)
@@ -176,7 +179,8 @@ class CASController(UserController):
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
             if not ticket:
-                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()), max_age=cas_plugin.LOGIN_CHECKUP_TIME)
+                t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()),
+                                      max_age=cas_plugin.LOGIN_CHECKUP_TIME)
                 next_url = t.request.params.get('next')
                 redirect(cas_plugin.CAS_APP_URL + next_url)
 
