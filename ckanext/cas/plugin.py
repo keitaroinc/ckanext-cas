@@ -121,7 +121,7 @@ class CASClientPlugin(p.SingletonPlugin):
             login_checkup_cookie = t.request.cookies.get(self.LOGIN_CHECKUP_COOKIE, None)
             if login_checkup_cookie:
                 return
-            log.debug('Checking is CAS session exists for user')
+            log.debug('Checking if CAS session exists for user')
             url = self._generate_login_url(gateway=True, next=True)
             redirect(url)
 
