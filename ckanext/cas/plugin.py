@@ -13,6 +13,7 @@ import ckan.lib.base as base
 import ckan.lib.helpers as h
 import ckan.plugins as p
 import ckan.plugins.toolkit as t
+from ckanext.cas.db import setup as db_setup
 from ckanext.cas.controller import CTRL, CASController
 from ckanext.cas.db import delete_user_entry, is_ticket_valid
 
@@ -43,6 +44,9 @@ class CASClientPlugin(p.SingletonPlugin):
     REDIRECT_ON_UNSUCCESSFUL_LOGIN = None
 
     def configure(self, config_):
+        # Setup database tables
+        db_setup()
+
         # Load and parse user attributes mapping
         user_mapping = t.aslist(config_.get('ckanext.cas.user_mapping'))
         for attr in user_mapping:

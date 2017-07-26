@@ -92,6 +92,14 @@ In order to configure CKAN to use CAS you must setup the following configuration
     # When login is unsuccessful redirect users to this URL
     ckanext.cas.unsuccessful_login_redirect_url
 
+    # Time (in seconds) for checkup if the user is authenticated in CAS (optional)
+    # defaults to 600
+    ckanext.cas.login_checkup_time = 600
+
+    # Name of the cookie for login checkup (optional)
+    # defaults to cas_login_check
+    ckanext.cas.login_checkup_cookie = cas_login_check
+
 
 Make sure you have configured ``django-mama-cas`` properly i.e. ::
 
@@ -110,7 +118,7 @@ Make sure you have configured ``django-mama-cas`` properly i.e. ::
 **NOTE:** If you use SAML as validation method for CAS have in mind that CKAN and django must be accessed over SSL.
 
 The current version of ``django-mama-cas`` has a bug when you use SAML as validation method since it is unable
-to serialize user attribute types that different from string.
+to serialize user attribute types that are different from string.
 
 `Pull request <https://github.com/jbittel/django-mama-cas/pull/44>`_ has been submitted
 but until it has been approved and merged you can use the following `fork <https://github.com/keitaroinc/django-mama-cas/tree/saml-response-errors>`_ of ``django-mama-cas``.
