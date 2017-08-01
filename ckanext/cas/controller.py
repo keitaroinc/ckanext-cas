@@ -89,7 +89,7 @@ class CASController(UserController):
             if not ticket:
                 t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()),
                                       max_age=cas_plugin.LOGIN_CHECKUP_TIME)
-                next_url = t.request.params.get('next')
+                next_url = t.request.params.get('next', '/')
                 redirect(cas_plugin.CAS_APP_URL + next_url)
 
             log.debug('Validating ticket: {0}'.format(ticket))
@@ -190,7 +190,7 @@ class CASController(UserController):
             if not ticket:
                 t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()),
                                       max_age=cas_plugin.LOGIN_CHECKUP_TIME)
-                next_url = t.request.params.get('next')
+                next_url = t.request.params.get('next', '/')
                 redirect(cas_plugin.CAS_APP_URL + next_url)
 
             log.debug('Validating ticket: {0}'.format(ticket))
