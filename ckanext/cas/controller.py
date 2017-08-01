@@ -140,6 +140,12 @@ class CASController(UserController):
 
     def _authenticate_user(self, username, email, fullname, is_superuser):
         user = m.User.get(username)
+
+        if not is_superuser or is_superuser == 'False':
+            is_superuser = False
+        else:
+            is_superuser = True
+
         if user is None:
             data_dict = {'name': unicode(username),
                          'email': email,
@@ -149,6 +155,7 @@ class CASController(UserController):
                 user_obj = l.get_action('user_create')({'ignore_auth': True}, data_dict)
             except Exception as e:
                 log.error(e)
+                abort(500, str(e))
 
             if is_superuser:
                 try:
@@ -169,6 +176,8 @@ class CASController(UserController):
                 l.get_action('user_update')({'ignore_auth': True}, user_obj)
             except Exception as e:
                 log.error(e)
+                abort(500, str(e))
+
             set_repoze_user(username)
             delete_user_entry(username)
             return username
@@ -218,9 +227,8 @@ class CASController(UserController):
 
             if 'user' in cas_plugin.USER_ATTR_MAP.keys():
                 username = getattr(attrs, cas_plugin.USER_ATTR_MAP['user']).text
-            sysadmin = False
-            if 'sysadmin' in cas_plugin.USER_ATTR_MAP.keys():
-                sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin'])
+
+            sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin']).text
 
             username = self._authenticate_user(username, email, fullname, sysadmin)
             insert_entry(ticket, username)
