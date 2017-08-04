@@ -103,12 +103,17 @@ class CASController(UserController):
                 if root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status']['StatusCode'].get(
                         'Value') == 'samlp:Success':
                     user_attrs = cas_plugin.USER_ATTR_MAP
-                    attributes = [x for x in root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response'][
+                    cas_attributes = [x for x in root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response'][
                         '{urn:oasis:names:tc:SAML:1.0:assertion}Assertion']['AttributeStatement']['Attribute']]
                     data_dict = {}
-                    for attr in attributes:
-                        if attr.get('AttributeName') in user_attrs.values():
-                            data_dict[attr.get('AttributeName')] = attr['AttributeValue'].text
+                    attributes = {key.get('AttributeName'): key['AttributeValue'].text for key in cas_attributes}
+
+                    for key, val in user_attrs.items():
+                        if type(val) == list:
+                            data_dict[key] = ' '.join([attributes.get(x, '') for x in val])
+                        else:
+                            data_dict[key] = attributes.get(val, '')
+
                 else:
                     failure = root['Body']['{urn:oasis:names:tc:SAML:1.0:protocol}Response']['Status'][
                         'StatusMessage'].text
@@ -124,10 +129,10 @@ class CASController(UserController):
                 abort(401, msg)
 
             log.debug('Validation of ticket {0} succeeded.'.format(ticket))
-            username = data_dict[cas_plugin.USER_ATTR_MAP['user']]
-            email = data_dict[cas_plugin.USER_ATTR_MAP['email']]
-            fullname = data_dict[cas_plugin.USER_ATTR_MAP['fullname']]
-            sysadmin = data_dict[cas_plugin.USER_ATTR_MAP['sysadmin']]
+            username = data_dict['user']
+            email = data_dict['email']
+            fullname = data_dict['fullname']
+            sysadmin = data_dict['sysadmin']
             username = self._authenticate_user(username, email, fullname, sysadmin)
 
             insert_entry(ticket, username)
@@ -220,15 +225,18 @@ class CASController(UserController):
                 abort(401, msg)
 
             log.debug('Validation of ticket {0} succedded. Authenticated user: {1}'.format(ticket, username.text))
-            attrs = root.authenticationSuccess.attributes
-            fullname = getattr(attrs, cas_plugin.USER_ATTR_MAP['fullname']).text
-            email = getattr(attrs, cas_plugin.USER_ATTR_MAP['email']).text
-            username = username.text
+            attrs = root.authenticationSuccess.attributes.__dict__
+            data_dict = {}
+            for key, val in cas_plugin.USER_ATTR_MAP.items():
+                if type(val) == list:
+                    data_dict[key] = ' '.join([attrs.get(x).text for x in val])
+                else:
+                    data_dict[key] = attrs.get(val).text
 
-            if 'user' in cas_plugin.USER_ATTR_MAP.keys():
-                username = getattr(attrs, cas_plugin.USER_ATTR_MAP['user']).text
-
-            sysadmin = getattr(attrs, cas_plugin.USER_ATTR_MAP['sysadmin']).text
+            fullname = data_dict['fullname']
+            email = data_dict['email']
+            sysadmin = data_dict['sysadmin'] or None
+            username = data_dict['user']
 
             username = self._authenticate_user(username, email, fullname, sysadmin)
             insert_entry(ticket, username)

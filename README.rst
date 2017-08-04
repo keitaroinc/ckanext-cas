@@ -63,6 +63,9 @@ In order to configure CKAN to use CAS you must setup the following configuration
     # ``email`` and ``user`` mappings are required
     ckanext.cas.user_mapping = email~email user~username fullname~full_name sysadmin~is_superuser
 
+    # If you need to combine attributes (note fullname)
+    ckanext.cas.user_mapping = email~email user~username fullname~first_name+last_name sysadmin~is_superuser
+
     # CAS login URL (required)
     ckanext.cas.login_url = http://mamacas.django.com/login
 

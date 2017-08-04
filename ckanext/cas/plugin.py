@@ -51,6 +51,8 @@ class CASClientPlugin(p.SingletonPlugin):
         user_mapping = t.aslist(config_.get('ckanext.cas.user_mapping'))
         for attr in user_mapping:
             key, val = attr.split('~')
+            if '+' in val:
+                val = val.split('+')
             self.USER_ATTR_MAP.update({key: val})
 
         if not any(self.USER_ATTR_MAP):
