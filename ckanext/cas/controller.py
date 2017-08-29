@@ -6,6 +6,11 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
+try:
+    from pylons.controllers.util import redirect
+except ImportError:
+    from flask import redirect
+
 import datetime
 import logging
 import time
@@ -29,7 +34,6 @@ CTRL = 'ckanext.cas.controller:CASController'
 
 render = base.render
 abort = base.abort
-redirect = base.redirect
 
 CAS_NAMESPACE = 'urn:oasis:names:tc:SAML:2.0:protocol'
 XML_NAMESPACES = {'samlp': CAS_NAMESPACE}

@@ -6,6 +6,11 @@ except ImportError:
     # CKAN 2.6 and earlier
     from pylons import config
 
+try:
+    from pylons.controllers.util import redirect
+except ImportError:
+    from flask import redirect
+
 import logging
 import re
 
@@ -19,7 +24,6 @@ from ckanext.cas.db import delete_user_entry, is_ticket_valid
 
 render = base.render
 abort = base.abort
-redirect = base.redirect
 
 
 log = logging.getLogger(__name__)
