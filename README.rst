@@ -19,6 +19,11 @@ ckanext-cas
 
 
 ------------
+Special Thanks
+------------
+Special thanks to `Neogeo Technologies <http://www.neogeo-online.net>`_ for their contribution in making of this plugin.
+
+------------
 Requirements
 ------------
 
