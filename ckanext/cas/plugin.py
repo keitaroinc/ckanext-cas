@@ -147,11 +147,17 @@ class CASClientPlugin(p.SingletonPlugin):
         elif self.CAS_VERSION == 3:
             url = self.CAS_LOGIN_URL + params + self.CAS_APP_URL + '/cas/saml_callback'
         if next:
-            url = url + '?next=' + t.request.environ['CKAN_CURRENT_URL']
+            # Check for referer header
+            _next = t.request.environ['CKAN_CURRENT_URL']
+            referer = t.request.headers.get('referer', None)
+            if referer is not None:
+                _next = referer
+            url = url + '?next=' + _next
+
         return url
 
     def login(self):
-        cas_login_url = self._generate_login_url()
+        cas_login_url = self._generate_login_url(next=True)
         redirect(cas_login_url)
 
     def logout(self):
