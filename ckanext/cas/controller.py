@@ -196,10 +196,10 @@ class CASController(UserController):
         cas_plugin = p.get_plugin('cas')
         if t.request.method.lower() == 'get':
             ticket = t.request.params.get(cas_plugin.TICKET_KEY)
-            next_url = t.request.params.get('next', '/')
             if not ticket:
                 t.response.set_cookie(cas_plugin.LOGIN_CHECKUP_COOKIE, str(time.time()),
                                       max_age=cas_plugin.LOGIN_CHECKUP_TIME)
+                next_url = t.request.params.get('next', '/')
                 redirect(cas_plugin.CAS_APP_URL + next_url)
 
             log.debug('Validating ticket: {0}'.format(ticket))
@@ -244,8 +244,6 @@ class CASController(UserController):
 
             username = self._authenticate_user(username, email, fullname, sysadmin)
             insert_entry(ticket, username)
-            if next_url not in (None, '/'):
-                redirect(next_url)
             redirect(t.h.url_for(controller='user', action='dashboard', id=username))
 
         else:
