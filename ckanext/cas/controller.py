@@ -99,7 +99,7 @@ class CASController(UserController):
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.post(cas_plugin.SAML_VALIDATION_URL + '?TARGET={0}/cas/saml_callback'.format(cas_plugin.CAS_APP_URL),
                         data=self._generate_saml_request(ticket),
-                        verify=False)  # TODO: Change to true
+                        verify=cas_plugin.VERIFY_CERTIFICATE)
 
             root = objectify.fromstring(q.content)
             failure = False
@@ -206,7 +206,7 @@ class CASController(UserController):
             log.debug('Validating ticket: {0}'.format(ticket))
             q = rq.get(cas_plugin.SERVICE_VALIDATION_URL,
                        params={cas_plugin.TICKET_KEY: ticket,
-                               cas_plugin.SERVICE_KEY: cas_plugin.CAS_APP_URL + '/cas/callback'})
+                               cas_plugin.SERVICE_KEY: cas_plugin.CAS_APP_URL + '/cas/callback'}, verify=cas_plugin.VERIFY_CERTIFICATE)
 
             root = objectify.fromstring(q.content)
             try:

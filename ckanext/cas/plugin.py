@@ -46,6 +46,7 @@ class CASClientPlugin(p.SingletonPlugin):
     CAS_VERSION = None
     CAS_APP_URL = None
     REDIRECT_ON_UNSUCCESSFUL_LOGIN = None
+    VERIFY_CERTIFICATE = True
 
     def configure(self, config_):
         # Setup database tables
@@ -98,6 +99,7 @@ class CASClientPlugin(p.SingletonPlugin):
         self.REDIRECT_ON_UNSUCCESSFUL_LOGIN = config.get('ckanext.cas.unsuccessful_login_redirect_url', None)
         self.LOGIN_CHECKUP_TIME = t.asint(config.get('ckanext.cas.login_checkup_time', 600))
         self.LOGIN_CHECKUP_COOKIE = config.get('ckanext.cas.login_checkup_cookie', 'cas_login_check')
+        self.VERIFY_CERTIFICATE = t.asbool(config.get('ckanext.cas.verify_certificate', True))
 
     # IConfigurer
 
