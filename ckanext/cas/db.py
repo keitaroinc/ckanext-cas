@@ -35,7 +35,7 @@ def setup():
         index_names = [index['name'] for index in inspector.get_indexes("ckanext_cas_login")]
         if not "ckanext_cas_login_ticket_id_idx" in index_names:
             log.debug('Creating index for ckanext_cas_login')
-            Index("ckanext_cas_login_ticket_id_idx", cas_table.c.ckanext_cas_login_ticket_id).create()
+            Index("ckanext_cas_login_ticket_id_idx", cas_table.c.ticket_id).create()
 
 
 class CasUser(domain_object.DomainObject):
@@ -61,7 +61,8 @@ def define_cas_tables():
     cas_table = Table('ckanext_cas_login', metadata,
                       Column('ticket_id', types.UnicodeText, primary_key=True, nullable=False),
                       Column('user', types.UnicodeText, default=u'', nullable=False, unique=True),
-                      Column('timestamp', types.DateTime, default=datetime.datetime.utcnow(), nullable=False))
+                      Column('timestamp', types.DateTime, default=datetime.datetime.utcnow(), nullable=False),
+                      Index('ckanext_cas_login_ticket_id_idx', 'ticket_id'))
 
     mapper(
         CasUser,

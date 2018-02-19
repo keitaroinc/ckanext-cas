@@ -153,7 +153,7 @@ class CASClientPlugin(p.SingletonPlugin):
         return url
 
     def login(self):
-        cas_login_url = self._generate_login_url()
+        cas_login_url = self._generate_login_url(next=True)
         redirect(cas_login_url)
 
     def logout(self):
