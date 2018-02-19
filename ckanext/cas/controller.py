@@ -147,7 +147,7 @@ class CASController(UserController):
             log.debug(msg)
             abort(405, msg)
 
-    def _authenticate_user(self, username, email, fullname, is_superuser):
+    def _authenticate_user(self, username, email, fullname, is_superuser=False):
         user = m.User.get(username)
 
         if not is_superuser or is_superuser == 'False':
@@ -177,15 +177,16 @@ class CASController(UserController):
             delete_user_entry(user_obj['name'])
             return user_obj['name']
         else:
-            try:
-                user_obj = {'id': username,
-                            'email': email,
-                            'fullname': fullname,
-                            'sysadmin': is_superuser}
-                l.get_action('user_update')({'ignore_auth': True}, user_obj)
-            except Exception as e:
-                log.error(e)
-                abort(500, str(e))
+            if user.name != username or user.email != email or user.fullname != fullname or user.sysadmin != is_superuser:
+                try:
+                    user_obj = {'id': username,
+                                'email': email,
+                                'fullname': fullname,
+                                'sysadmin': is_superuser}
+                    l.get_action('user_update')({'ignore_auth': True}, user_obj)
+                except Exception as e:
+                    log.error(e)
+                    abort(500, str(e))
 
             set_repoze_user(username)
             delete_user_entry(username)
