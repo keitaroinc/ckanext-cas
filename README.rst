@@ -86,11 +86,11 @@ In order to configure CKAN to use CAS you must setup the following configuration
 
     # CAS service validation URL (conditional)
     # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
-    ckanext.cas.service_validation_url = http://cmamacas.django.com/serviceValidate
+    ckanext.cas.service_validation_url = http://mamacas.django.com/serviceValidate
 
     # CAS SAML validation URL (conditional)
     # Either ``ckanext.cas.service_validation_url`` or ``ckanext.cas.saml_validation_url`` must be configured.
-    ckanext.cas.saml_validation_url = http://cmamacas.django.com/samlValidate
+    ckanext.cas.saml_validation_url = http://mamacas.django.com/samlValidate
 
     # Registration URL (optional)
     # Overrides the default registration page of CKAN
@@ -107,6 +107,9 @@ In order to configure CKAN to use CAS you must setup the following configuration
     # Name of the cookie for login checkup (optional)
     # defaults to cas_login_check
     ckanext.cas.login_checkup_cookie = cas_login_check
+
+    # Enable/disable certificate verification when making requests to Mama-Cas
+    ckanext.cas.verify_certificate = true
 
 
 Make sure you have configured ``django-mama-cas`` properly i.e. ::
