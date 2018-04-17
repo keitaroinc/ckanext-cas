@@ -13,7 +13,7 @@ except ImportError:
 
 import logging
 import re
-
+import urllib
 import ckan.lib.base as base
 import ckan.lib.helpers as h
 import ckan.plugins as p
@@ -149,7 +149,7 @@ class CASClientPlugin(p.SingletonPlugin):
         elif self.CAS_VERSION == 3:
             url = self.CAS_LOGIN_URL + params + self.CAS_APP_URL + '/cas/saml_callback'
         if next:
-            url = url + '?next=' + t.request.environ['CKAN_CURRENT_URL']
+            url = url + '?next=' + urllib.quote(t.request.environ['CKAN_CURRENT_URL'])
         return url
 
     def login(self):
